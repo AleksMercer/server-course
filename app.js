@@ -1,4 +1,5 @@
 import express from "express";
+import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
 const app = express();
@@ -12,29 +13,35 @@ app.use((req, res, next) => {
 });
 
 app.get("/login/", (_, res) => {
-  res.setHeader("Content-Type", "text/plain");
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.send(LOGIN);
 });
 
 app.get("/test/", async (req, res) => {
   const targetURL = req.query.URL;
-  if (!targetURL) return res.status(400).send("Missing URL parameter");
+
+  if (!targetURL) {
+    return res.status(400).send("Missing URL parameter");
+  }
 
   let browser;
   try {
+    const chromiumExecutablePath = await chromium.executablePath(
+      "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+    );
+
     browser = await puppeteer.launch({
-      executablePath: "/usr/bin/chromium-browser",
       args: [
+        ...chromium.args,
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
         "--disable-gpu",
       ],
-      headless: "new",
+      defaultViewport: chromium.defaultViewport,
+      executablePath: chromiumExecutablePath,
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     });
 
     const page = await browser.newPage();
@@ -54,13 +61,15 @@ app.get("/test/", async (req, res) => {
       return document.querySelector("#inp").value;
     });
 
-    res.setHeader("Content-Type", "text/plain");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.send(result);
   } catch (error) {
     console.error("Error in /test/ route:", error);
     res.status(500).send("Internal Server Error");
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
