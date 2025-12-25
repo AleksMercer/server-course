@@ -1,8 +1,8 @@
-const express = require("express");
-const { MongoClient } = require("mongodb");
+import express from "express";
+import puppeteer from "puppeteer";
 
 const app = express();
-const LOGIN = "83d8909a-b053-40bc-b4cd-4268e60b19b3";
+const LOGIN = " 83d8909a-b053-40bc-b4cd-4268e60b19b3";
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -11,42 +11,61 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.urlencoded({ extended: true }));
-
 app.get("/login/", (_, res) => {
-  res.send(LOGIN);
+  res.set("Content-Type", "text/plain").send(LOGIN);
 });
 
-app.post("/insert/", async (req, res) => {
-  let client;
+app.get("/test/", async (req, res) => {
+  const targetURL = req.query.URL;
+
+  if (!targetURL) {
+    return res.status(400).send("Missing URL parameter");
+  }
+
+  let browser = null;
+
   try {
-    const { login, password, URL } = req.body;
-    if (!login || !password || !URL) {
-      return res.status(400).send("Missing fields");
-    }
-
-    client = new MongoClient(URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--single-process",
+      ],
+      executablePath: process.env.CHROMIUM_PATH || puppeteer.executablePath(),
     });
 
-    await client.connect();
-    const dbName = URL.split("/").pop().split("?")[0];
-    const db = client.db(dbName);
-    const usersCollection = db.collection("users");
+    const page = await browser.newPage();
 
-    await usersCollection.insertOne({
-      login,
-      password,
-      createdAt: new Date(),
+    await page.goto(targetURL, {
+      waitUntil: "networkidle2",
+      timeout: 15000,
     });
 
-    res.sendStatus(200);
-  } catch (err) {
-    console.error(err);
-    res.sendStatus(500);
+    await page.click("#bt");
+
+    await page.waitForFunction(
+      () => {
+        const input = document.querySelector("#inp");
+        return input && input.value !== "";
+      },
+      { timeout: 5000 }
+    );
+
+    const result = await page.evaluate(() => {
+      return document.querySelector("#inp").value;
+    });
+
+    res.set("Content-Type", "text/plain").send(result);
+  } catch (error) {
+    console.error("Puppeteer error:", error);
+    res.status(500).send(`Error: ${error.message}`);
   } finally {
-    if (client) await client.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 

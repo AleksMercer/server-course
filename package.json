@@ -1,17 +1,17 @@
 {
-  "name": "server-web-tech-week7",
+  "name": "server-web-tech-week9",
   "version": "1.0.0",
-  "description": "Week 7 Assignment",
+  "description": "Week 9 Assignment with Puppeteer",
   "main": "app.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "mongodb": "^3.7.3"
+    "puppeteer-core": "^21.0.0"
   },
   "engines": {
-    "node": "16.x"
+    "node": ">=18.0.0"
   }
 }
