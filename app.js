@@ -1,5 +1,4 @@
 import express from "express";
-import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
 const app = express();
@@ -13,52 +12,55 @@ app.use((req, res, next) => {
 });
 
 app.get("/login/", (_, res) => {
+  res.setHeader("Content-Type", "text/plain");
   res.send(LOGIN);
 });
 
 app.get("/test/", async (req, res) => {
   const targetURL = req.query.URL;
-
-  if (!targetURL) {
-    return res.status(400).send("Missing URL parameter");
-  }
+  if (!targetURL) return res.status(400).send("Missing URL parameter");
 
   let browser;
   try {
     browser = await puppeteer.launch({
-      args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-      ignoreHTTPSErrors: true,
+      executablePath: "/usr/bin/chromium-browser",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process",
+        "--disable-gpu",
+      ],
+      headless: "new",
     });
 
     const page = await browser.newPage();
-    await page.goto(targetURL, { waitUntil: "networkidle2" });
+    await page.goto(targetURL, { waitUntil: "networkidle2", timeout: 30000 });
 
     await page.click("#bt");
 
     await page.waitForFunction(
       () => {
         const input = document.querySelector("#inp");
-        return input && input.value;
+        return input && input.value !== "";
       },
-      { timeout: 5000 }
+      { timeout: 10000 }
     );
 
     const result = await page.evaluate(() => {
       return document.querySelector("#inp").value;
     });
 
-    res.set("Content-Type", "text/plain");
+    res.setHeader("Content-Type", "text/plain");
     res.send(result);
   } catch (error) {
     console.error("Error in /test/ route:", error);
     res.status(500).send("Internal Server Error");
   } finally {
-    if (browser) {
-      await browser.close();
-    }
+    if (browser) await browser.close();
   }
 });
 
