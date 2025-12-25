@@ -1,8 +1,8 @@
 import express from "express";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 
 const app = express();
-const LOGIN = " 83d8909a-b053-40bc-b4cd-4268e60b19b3";
+const LOGIN = "83d8909a-b053-40bc-b4cd-4268e60b19b3";
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -34,7 +34,7 @@ app.get("/test/", async (req, res) => {
         "--disable-gpu",
         "--single-process",
       ],
-      executablePath: process.env.CHROMIUM_PATH || puppeteer.executablePath(),
+      executablePath: "/usr/bin/google-chrome-stable",
     });
 
     const page = await browser.newPage();
