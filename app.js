@@ -1,5 +1,5 @@
-import express from "express";
-import { MongoClient } from "mongodb";
+const express = require("express");
+const { MongoClient } = require("mongodb");
 
 const app = express();
 const LOGIN = "83d8909a-b053-40bc-b4cd-4268e60b19b3";
@@ -19,14 +19,10 @@ app.get("/login/", (_, res) => {
 
 app.post("/insert/", async (req, res) => {
   let client;
-
   try {
     const { login, password, URL } = req.body;
-
     if (!login || !password || !URL) {
-      return res
-        .status(400)
-        .send("Missing required fields: login, password, URL");
+      return res.status(400).send("Missing fields");
     }
 
     client = new MongoClient(URL, {
@@ -35,33 +31,26 @@ app.post("/insert/", async (req, res) => {
     });
 
     await client.connect();
-
     const dbName = URL.split("/").pop().split("?")[0];
     const db = client.db(dbName);
-
     const usersCollection = db.collection("users");
 
-    const userDocument = {
-      login: login,
-      password: password,
+    await usersCollection.insertOne({
+      login,
+      password,
       createdAt: new Date(),
-    };
-
-    await usersCollection.insertOne(userDocument);
+    });
 
     res.sendStatus(200);
   } catch (err) {
     console.error(err);
     res.sendStatus(500);
   } finally {
-    if (client) {
-      await client.close();
-    }
+    if (client) await client.close();
   }
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

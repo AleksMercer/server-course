@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Week 7 Assignment",
   "main": "app.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "node app.js"
   },
@@ -12,6 +12,6 @@
     "mongodb": "^3.7.3"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": "16.x"
   }
 }
